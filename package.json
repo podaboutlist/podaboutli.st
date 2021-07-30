@@ -1,0 +1,41 @@
+{
+  "name": "podaboutli.st",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.0.1",
+  "description": "The code that powers https://podaboutli.st",
+  "homepage": "https://podaboutli.st",
+  "repository": {
+    "type": "git",
+    "url": "github:Podcast-About-List/podaboutli.st"
+  },
+  "bugs": {
+    "url": "https://github.com/Podcast-About-List/podaboutli.st/issues"
+  },
+  "private": true,
+  "keywords": [
+    "next.js",
+    "portfolio"
+  ],
+  "author": {
+    "name": "Ralph Drake",
+    "email": "ralph@podaboutli.st",
+    "url": "https://ralphdrake.com"
+  },
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "export": "next export",
+    "deploy": "./deploy.gh-pages.sh"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-define": "^1.3.0",
+    "eslint": "^7.31.0",
+    "eslint-config-next": "^11.0.1"
+  }
+}
