@@ -2,7 +2,27 @@
 set -e
 
 
-### Globals
+### Global helper functions (required by everything!)
+# dbgEcho <level(INFO/WARN/ERROR)> <message>
+dbgEcho () {
+    echo "[$SCRIPT_NAME_PRETTY] $1: $2"
+}
+
+
+### Sanity checks - are we running in a properly configured environment?
+if [ ! -f "package.json" ]; then
+    dbgEcho "ERROR" "File package.json not found"
+    exit 1
+fi
+
+if [ -z $npm_package_repository_url ]; then
+    dbgEcho "WARN" "Your package's repository URL is not set in package.json."
+    dbgEcho "WARN" "This could cause issues force pushing."
+    dbgEcho "WARN" "Find out how to set up a repo URL here: https://bit.ly/npmRepoURL"
+fi
+
+
+### Global variables
 # dbgEcho script name
 SCRIPT_NAME_PRETTY="$(echo $0 | sed 's/\.\///')"
 
@@ -17,11 +37,6 @@ COMMIT_AUTHOR_EMAIL="github@podaboutli.st"
 
 
 ### Helper functions
-# dbgEcho <level(INFO/WARN/ERROR)> <message>
-dbgEcho () {
-    echo "[$SCRIPT_NAME_PRETTY] $1: $2"
-}
-
 resetGit () {
     LAST_AUTHOR="$(git --no-pager log -1 --pretty=format:'%an')"
 
@@ -34,13 +49,7 @@ resetGit () {
 }
 
 
-### --- Beginning of the main script ---
-
-if [ ! -f "package.json" ]; then
-    dbgEcho "ERROR" "File package.json not found."
-    exit 1
-fi
-
+### -------------------------------------------- Beginning of the script proper
 # Make sure the codebase is fully up-to-date before proceeding
 dbgEcho "INFO" "Fetching upstream HEAD..."
 git fetch --quiet --progress
@@ -52,9 +61,7 @@ if [[ "$STATUS" != *"nothing to commit"* ]]; then
 fi
 
 ## Temporarily commit `out/`, subtree push to gh-pages branch, revert commit.
-
-# TODO: Make sure the last two lines (reset HEAD~, checkout) run to ensure a
-#       reset to a clean working state even if one of these commands fails.
+# TODO: Make sure the `resetGit` function executes if an error occurs
 
 dbgEcho "INFO" "Removing '/out/' from .gitignore"
 sed -i 's/\/out\///' .gitignore
@@ -76,6 +83,22 @@ git commit \
     --author="$COMMIT_AUTHOR_NAME <$COMMIT_AUTHOR_EMAIL>"
 
 dbgEcho "INFO" "Pushing built files to the gh-pages branch"
-git push origin `git subtree split --prefix out $SOURCE_BRANCH`:$GH_PAGES_BRANCH --force
+if [ ! -z "$npm_package_repository_url" ]; then
+    dbgEcho "INFO" "Checking if the $GH_PAGES_BRANCH exists on our remote"
+    TARGET_BRANCH_EXISTS="$(git ls-remote --heads "$npm_package_repository_url" $GH_PAGES_BRANCH)"
 
+    if [ -z "$TARGET_BRANCH_EXISTS" ]; then
+        dbgEcho "INFO" "Target $GH_PAGES_BRANCH branch not found on remote"
+        dbgEcho "INFO" "Pushing a new branch."
+        git subtree push --prefix "out" origin $GH_PAGES_BRANCH
+    fi
+else
+    # Target branch __does__ exist, or we're just guessing since we don't have
+    # a URL for the remote repo.
+    # Use some git black magic to force push the subtree and cross our fingers it works
+    dbgEcho "INFO" "Force pushing latest build to $GH_PAGES_BRANCH"
+    git push origin `git subtree split --prefix "out" $SOURCE_BRANCH`:$GH_PAGES_BRANCH --force
+fi
+
+# Remove out/ commit, reset .gitignore
 resetGit
