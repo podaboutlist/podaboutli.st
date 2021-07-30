@@ -2,10 +2,29 @@
 set -e
 
 
-### Global helper functions (required by everything!)
+### Everything needsd dbgEcho!
+
+# dbgEcho script name
+SCRIPT_NAME_PRETTY="`tput setaf 6`$(echo $0 | sed 's/\.\///')`tput sgr0`"
+
 # dbgEcho <level(INFO/WARN/ERROR)> <message>
 dbgEcho () {
-    echo "[$SCRIPT_NAME_PRETTY] $1: $2"
+    case "$1" in
+        INFO)
+            # Blue
+            ECHO_STATUS=" `tput setaf 4`$1`tput sgr0`"
+            ;;
+        WARN)
+            # Yellow
+            ECHO_STATUS=" `tput setaf 3`$1`tput sgr0`"
+            ;;
+        ERROR)
+            # Red
+            ECHO_STATUS="`tput setaf 1`$1`tput sgr0`"
+            ;;
+    esac
+
+    echo "[$SCRIPT_NAME_PRETTY] $ECHO_STATUS: $2"
 }
 
 
@@ -23,8 +42,6 @@ fi
 
 
 ### Global variables
-# dbgEcho script name
-SCRIPT_NAME_PRETTY="$(echo $0 | sed 's/\.\///')"
 
 # For pushing commits
 SOURCE_BRANCH="main"
@@ -102,3 +119,5 @@ fi
 
 # Remove out/ commit, reset .gitignore
 resetGit
+
+dbgEcho "INFO" "Finished pushing to GitHub Pages."
